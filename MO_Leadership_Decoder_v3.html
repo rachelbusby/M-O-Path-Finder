@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M&O Role Assessment — Leadership Decoder</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:14px;background:#f0f4f8;color:#222;min-height:100vh}
+.shell{max-width:920px;margin:0 auto;padding:24px 16px 60px}
+.header{background:#1F4E79;color:#fff;border-radius:8px;padding:24px 28px;margin-bottom:20px}
+.header h1{font-size:20px;font-weight:700;margin-bottom:6px}
+.header p{font-size:13px;opacity:.85;line-height:1.6}
+.card{background:#fff;border:1px solid #dde2ea;border-radius:8px;padding:22px 24px;margin-bottom:16px}
+.card h2{font-size:13px;font-weight:700;color:#1F4E79;margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:8px;border-bottom:1px solid #eef0f4}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.step-box{background:#EBF3FC;border:1px solid #B5D4F4;border-radius:7px;padding:14px 16px}
+.step-box .num{font-size:20px;font-weight:700;color:#1F4E79;margin-bottom:4px}
+.step-box p{font-size:12px;color:#1F4E79;line-height:1.5}
+.paste-area{width:100%;min-height:160px;border:1px solid #cdd3dc;border-radius:6px;padding:10px 12px;font-family:'Courier New',monospace;font-size:11px;color:#333;resize:vertical;background:#fafafa}
+.paste-area:focus{outline:none;border-color:#2E75B6}
+.btn{padding:10px 22px;border-radius:6px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;transition:background .1s}
+.btn-primary{background:#1F4E79;color:#fff}
+.btn-primary:hover{background:#173d63}
+.btn-secondary{background:#fff;color:#1F4E79;border:1px solid #2E75B6}
+.btn-secondary:hover{background:#EBF3FC}
+.btn-green{background:#1D9E75;color:#fff}
+.btn-green:hover{background:#15785a}
+.status-bar{background:#EBF3FC;border:1px solid #B5D4F4;border-radius:6px;padding:10px 14px;font-size:12px;color:#0C447C;margin-top:12px;display:none;line-height:1.6}
+.status-bar.error{background:#FCEBEB;border-color:#F7C1C1;color:#A32D2D}
+.status-bar.success{background:#C8EEE0;border-color:#5DCAA5;color:#085041}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+.preview-table th{background:#1F4E79;color:#fff;padding:7px 10px;text-align:left;font-size:11px;white-space:nowrap}
+.preview-table td{padding:6px 10px;border-bottom:1px solid #eef0f4;vertical-align:middle}
+.preview-table tr:nth-child(even) td{background:#f7f9fc}
+.score-pill{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.s-green{background:#C8EEE0;color:#085041}
+.s-yellow{background:#FDE9BE;color:#633806}
+.s-orange{background:#FBDDD3;color:#712B13}
+.s-red{background:#F7C1C1;color:#A32D2D}
+.learn-pill{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-right:2px;background:#DBEEFF;color:#0C447C}
+.learn-hi{background:#D8EEC2;color:#3B6D11}
+.remove-btn{background:none;border:none;color:#A32D2D;cursor:pointer;font-size:16px;padding:0 4px;line-height:1}
+.row-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+#preview-section{display:none}
+#download-section{display:none;margin-top:16px}
+.download-box{background:#C8EEE0;border:1px solid #5DCAA5;border-radius:8px;padding:18px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.download-box .icon{font-size:32px}
+.download-box .text h3{font-size:15px;font-weight:700;color:#085041;margin-bottom:3px}
+.download-box .text p{font-size:12px;color:#0F6E56}
+@media(max-width:600px){.steps{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="header">
+  <h1>M&amp;O Role Assessment &mdash; Leadership Decoder</h1>
+  <p>Paste staff submission codes below to decode all responses. Roles are matched using a blended score: skill ratings (55%), actual JD keyword alignment including transferable skills (30%), and stated learning interests (15%). Each role is assigned to one person only.</p>
+</div>
+
+<div class="steps">
+  <div class="step-box"><div class="num">1</div><p>Collect submission codes from staff via email or submission form</p></div>
+  <div class="step-box"><div class="num">2</div><p>Paste all codes into the box below &mdash; one per line &mdash; and click Decode</p></div>
+  <div class="step-box"><div class="num">3</div><p>Review the preview then download the Excel workbook for role assignment planning</p></div>
+</div>
+
+<div class="card">
+  <h2>Paste submission codes</h2>
+  <textarea class="paste-area" id="codes-input" placeholder="Paste submission codes here, one per line. Each code starts with MO_ASSESSMENT_V1:"></textarea>
+  <div class="row-actions">
+    <button class="btn btn-primary" onclick="decodeAll()">Decode submissions</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+    <button class="btn btn-secondary" onclick="loadDemo()">Load demo data</button>
+  </div>
+  <div class="status-bar" id="status-bar"></div>
+</div>
+
+<div id="preview-section">
+  <div class="card">
+    <h2>Decoded submissions &nbsp;<span id="count-badge" style="font-size:11px;background:#DBEEFF;color:#0C447C;padding:2px 9px;border-radius:10px;font-weight:700;letter-spacing:0;text-transform:none"></span></h2>
+    <div style="overflow-x:auto">
+      <table class="preview-table" id="preview-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Name</th><th>Current role</th><th>Team</th>
+            <th>Submitted</th><th>Skills rated</th><th>Learning openness</th>
+            <th>Assigned role (blended)</th><th>2nd best match</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="preview-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="download-section">
+    <div class="download-box">
+      <div class="icon">&#8659;</div>
+      <div class="text">
+        <h3>Excel workbook ready</h3>
+        <p>Role scores, skill ratings, learning interests, and assignment planner &mdash; all in one workbook</p>
+      </div>
+      <button class="btn btn-green" style="margin-left:auto" onclick="downloadExcel()">Download Excel workbook</button>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+// ── SKILL IDs must match staff form exactly, same order ───────────────────
+const SKILL_IDS = [
+  // Step 1 — day-to-day work skills
+  'sop_writing','kb_mgmt','reporting','compliance','qa_testing','requirements',
+  'project_coord','communications','training_del','cms_cert','stakeholder',
+  // Step 2 — systems & tools
+  'user_mgmt','rbac','system_config','system_monitor','change_mgmt','incident_mgmt',
+  'dual_env','cutover','iam_systems','low_code','doc_mgmt','lms','edi_hipaa','sql_data','itsm_itil'
+];
+
+const SKILL_NAMES = {
+  user_mgmt:'User account & access management', rbac:'Role-based access control (RBAC)',
+  system_config:'System configuration & maintenance', system_monitor:'System health & performance monitoring',
+  change_mgmt:'IT change management', incident_mgmt:'Incident management & troubleshooting',
+  dual_env:'Dual/parallel environment operations', cutover:'System migration & cutover support',
+  iam_systems:'Identity & access management systems', low_code:'Low-code/no-code (Power Platform)',
+  doc_mgmt:'Document & content management systems', lms:'Learning management systems (LMS)',
+  edi_hipaa:'EDI & HIPAA transaction processing', sql_data:'SQL & database querying',
+  sop_writing:'SOP & process documentation', kb_mgmt:'Knowledge base management',
+  reporting:'Reporting & analytics', compliance:'Regulatory & compliance knowledge',
+  qa_testing:'Quality assurance & testing', requirements:'Business analysis & requirements',
+  project_coord:'Project coordination', communications:'Stakeholder communications & content',
+  training_del:'Training coordination & delivery', cms_cert:'CMS/federal certification & outcomes',
+  itsm_itil:'ITSM / ITIL service management', stakeholder:'Stakeholder & vendor management',
+};
+
+const SKILL_CATS = {
+  user_mgmt:'Platform & System Admin', rbac:'Platform & System Admin', system_config:'Platform & System Admin',
+  system_monitor:'Platform & System Admin', change_mgmt:'Platform & System Admin', incident_mgmt:'Platform & System Admin',
+  dual_env:'Platform & System Admin', cutover:'Platform & System Admin',
+  iam_systems:'Technical Platforms', low_code:'Technical Platforms', doc_mgmt:'Technical Platforms',
+  lms:'Technical Platforms', edi_hipaa:'Technical Platforms', sql_data:'Technical Platforms',
+  sop_writing:'Process & Professional', kb_mgmt:'Process & Professional', reporting:'Process & Professional',
+  compliance:'Process & Professional', qa_testing:'Process & Professional', requirements:'Process & Professional',
+  project_coord:'Process & Professional', communications:'Process & Professional', training_del:'Process & Professional',
+  cms_cert:'Process & Professional', itsm_itil:'Process & Professional', stakeholder:'Process & Professional',
+};
+
+// ── ALL 21 JD ROLES ───────────────────────────────────────────────────────
+const ROLES = [
+  // Core M&O process & professional roles
+  ['Access Management Administrator',       {rbac:5,user_mgmt:5,iam_systems:5,compliance:4,system_config:3,sop_writing:4,dual_env:4,cutover:3,incident_mgmt:3}],
+  ['Knowledge Management Specialist',       {kb_mgmt:5,sop_writing:5,communications:4,stakeholder:3,compliance:3,project_coord:3,training_del:2,reporting:3}],
+  ['Learning Management System Administrator',{lms:5,user_mgmt:4,system_config:4,sop_writing:4,kb_mgmt:3,training_del:4,reporting:3,compliance:3,dual_env:3,system_monitor:3}],
+  ['Certifications & Outcomes Lead',        {cms_cert:5,compliance:5,reporting:4,stakeholder:4,sop_writing:3,requirements:3,project_coord:4,communications:3}],
+  ['Training Specialist',                   {training_del:5,lms:3,sop_writing:4,kb_mgmt:4,stakeholder:3,communications:4,reporting:3,project_coord:3}],
+  ['Business Process & Requirements Analyst',{requirements:5,sop_writing:4,stakeholder:4,project_coord:3,qa_testing:3,compliance:3,communications:3,dual_env:3}],
+  ['Trading Partner Analyst',               {edi_hipaa:5,compliance:4,sop_writing:4,stakeholder:4,reporting:3,incident_mgmt:3,sql_data:3}],
+  ['QA Analyst',                            {qa_testing:5,sop_writing:4,reporting:3,requirements:4,compliance:3,project_coord:3,dual_env:3,stakeholder:3}],
+  ['Service Management Administrator',      {itsm_itil:5,incident_mgmt:5,change_mgmt:4,reporting:3,sop_writing:4,stakeholder:4,system_monitor:3,dual_env:3}],
+  ['Document Management Analyst',           {doc_mgmt:5,system_config:3,rbac:3,dual_env:4,sop_writing:5,cutover:3,compliance:4,incident_mgmt:2}],
+  ['Power Platform Administrator',          {low_code:5,iam_systems:3,system_config:4,rbac:3,compliance:3,sop_writing:3,stakeholder:3,change_mgmt:3}],
+  // Extended roles
+  ['Communications Analyst',               {communications:5,sop_writing:4,stakeholder:4,reporting:3,project_coord:3,compliance:3,kb_mgmt:3,training_del:2}],
+  ['Identity Management Administrator',    {iam_systems:5,rbac:5,user_mgmt:4,compliance:4,system_config:3,dual_env:4,incident_mgmt:3,cutover:3,change_mgmt:3}],
+  ['Project Specialist',                   {project_coord:5,stakeholder:4,sop_writing:3,reporting:4,communications:3,compliance:3,requirements:3}],
+  ['Cloud Support Specialist',             {system_monitor:5,incident_mgmt:4,change_mgmt:4,dual_env:5,cutover:4,system_config:4,sql_data:2,reporting:3}],
+  ['Contracts & Procurement Administrator',{compliance:5,stakeholder:4,reporting:4,sop_writing:4,project_coord:3,requirements:3}],
+  ['MuleSoft Administrator',               {system_config:5,incident_mgmt:4,change_mgmt:4,dual_env:4,cutover:4,sql_data:3,system_monitor:4,reporting:3}],
+  ['Salesforce Administrator',             {system_config:5,user_mgmt:4,rbac:3,low_code:4,stakeholder:3,sop_writing:3,change_mgmt:3,incident_mgmt:3}],
+  ['Snowflake Administrator',              {sql_data:5,system_config:4,system_monitor:4,rbac:3,reporting:4,compliance:3,dual_env:3}],
+  ['Tableau Administrator',               {reporting:5,sql_data:4,system_config:3,system_monitor:3,user_mgmt:3,rbac:3,stakeholder:3,sop_writing:3}],
+  ['Release Manager',                     {change_mgmt:5,dual_env:5,cutover:5,incident_mgmt:4,system_monitor:4,stakeholder:4,project_coord:4,sop_writing:3,reporting:3}],
+];
+
+const LEARN_AREA_LABELS = {
+  la_access:'Access & identity mgmt', la_km:'Knowledge management', la_lms:'LMS administration',
+  la_cert:'Certifications & compliance', la_training:'Training & facilitation', la_bp:'Business process & analysis',
+  la_trading:'EDI & trading partner ops', la_qa:'Quality assurance', la_svc:'Service management',
+  la_doc:'Document management', la_power:'Power Platform / low-code', la_data:'Data & reporting',
+  la_pm:'Project coordination', la_comm:'Communications & engagement',
+};
+
+const OPENNESS_LABELS = {1:'Not open',2:'Somewhat open',3:'Open & willing',4:'Actively motivated',5:'Eager - top priority'};
+
+// ── JD KEYWORD TIERS ─────────────────────────────────────────────────────
+// Each role has direct keywords (strong signal), transferable keywords (adjacent
+// skills that carry over), and growth keywords (interest/learning signals).
+// Scoring: direct=high boost, transferable=medium, growth=lower but still counts.
+const ROLE_JD = {
+  'Access Management Administrator': {
+    direct:      ['access management','user provisioning','deprovisioning','rbac','role-based access','iam','least privilege','sso','mfa','multi-factor','authentication','access review','recertification','active directory','entitlement'],
+    transferable:['user account','system administration','identity','security','permission','compliance','audit','account management','provisioning'],
+    growth:      ['access','identity management','security checks','system maintenance','iam systems','authentication systems']
+  },
+  'Knowledge Management Specialist': {
+    direct:      ['knowledge base','knowledge management','job aids','faqs','sop','standard operating procedure','content library','taxonomy','knowledge repository','knowledge articles','content lifecycle'],
+    transferable:['documentation','process documentation','sme','subject matter expert','content','reference materials','writing','technical writing','sharepoint'],
+    growth:      ['knowledge','manage a knowledge base','document system','content management','sops','faqs','reference guides']
+  },
+  'Learning Management System Administrator': {
+    direct:      ['lms','learning management system','scorm','course catalog','learning path','e-learning','curriculum','completion rate','learning administration','lms administration'],
+    transferable:['training platform','training tracking','training records','enrollment','course','training delivery','reporting','user management'],
+    growth:      ['learning platform','learning management','training system','lms admin','e-learning development']
+  },
+  'Certifications & Outcomes Lead': {
+    direct:      ['cms certification','certification','effp','enhanced federal financial','mes module','federal certification','outcomes','compliance reporting','federal oversight','certification documentation','medicaid certification'],
+    transferable:['regulatory compliance','performance metrics','federal reporting','compliance','stakeholder reporting','program compliance','audit'],
+    growth:      ['cms','federal compliance','certification process','outcomes reporting','medicaid compliance']
+  },
+  'Training Specialist': {
+    direct:      ['training','instructor-led','training schedule','training calendar','training coordination','training delivery','training materials','training effectiveness','train the trainer','training program','ocm','user adoption'],
+    transferable:['learning materials','facilitation','facilitating','teaching','mentoring','course development','job aids','training logistics','knowledge transfer','onboarding'],
+    growth:      ['teach','mentor','organizational change','training','learning','ocm','user adoption','change management','facilitat']
+  },
+  'Business Process & Requirements Analyst': {
+    direct:      ['business process','requirements','process mapping','gap analysis','brd','use case','business rule','requirements elicitation','functional specification','as-is','to-be','process model'],
+    transferable:['workflow','process documentation','process analysis','stakeholder requirements','process improvement','sop','system requirements','documentation','analyst'],
+    growth:      ['business analysis','process improvement','requirements gathering','process mapping','analyst role']
+  },
+  'Trading Partner Analyst': {
+    direct:      ['trading partner','edi','hipaa','electronic transaction','835','837','270','271','x12','clearinghouse','transaction set','file movement','hipaa transaction','edi processing','ansi x12'],
+    transferable:['connectivity','compliance','transaction monitoring','payer','provider enrollment','data exchange','integration','medicaid transactions'],
+    growth:      ['edi','trading partner','hipaa','electronic transactions','increase knowledge in edi']
+  },
+  'QA Analyst': {
+    direct:      ['quality assurance','qa','test plan','test case','defect tracking','uat','user acceptance testing','regression testing','defect','test execution','test cycle','test management','test script'],
+    transferable:['functional testing','integration testing','testing','quality standards','test coverage','validation','bug','requirements','documentation'],
+    growth:      ['qa','quality assurance','testing','test automation','become a qa','operations analyst','research analyst']
+  },
+  'Service Management Administrator': {
+    direct:      ['itsm','itil','service management','incident management','problem management','sla','service level agreement','service desk','servicenow','cmdb','service catalog','operational level'],
+    transferable:['change management','kpi','escalation','service delivery','service improvement','incident response','on-call','service request','reporting'],
+    growth:      ['service management','itsm','itil','service desk','it service','behind the scenes','analytical role','support management']
+  },
+  'Document Management Analyst': {
+    direct:      ['document management','records management','document processing','document retrieval','document lifecycle','version control','document repository','document control'],
+    transferable:['content management','sharepoint','filing','taxonomy','naming convention','archival','document system','sop','knowledge base','content'],
+    growth:      ['document management','records','content management','filing system','document system']
+  },
+  'Power Platform Administrator': {
+    direct:      ['power platform','power apps','power automate','power bi','power virtual agents','low-code','no-code','citizen developer','dlp','data loss prevention','microsoft power','canvas app'],
+    transferable:['governance','azure active directory','m365','automate','flow','microsoft','reporting','data analytics'],
+    growth:      ['power platform','low-code','power apps','automate','microsoft power','data-driven','analytics']
+  },
+  'Communications Analyst': {
+    direct:      ['communications','communications plan','communications calendar','communications content','communications strategy','stakeholder communications','provider communications','release communications'],
+    transferable:['content creation','messaging','drafting','editing','announcements','faqs','newsletter','user engagement','digital communications'],
+    growth:      ['communications','writing','content','stakeholder engagement','messaging','announcements']
+  },
+  'Identity Management Administrator': {
+    direct:      ['identity management','iam','sso','mfa','active directory','ldap','okta','ping','identity governance','nist','identity proofing','identity lifecycle','saml','oauth','federation'],
+    transferable:['authentication','authorization','identity systems','provisioning','rbac','access management','security','compliance'],
+    growth:      ['identity','iam','sso','authentication','identity management','security','access control']
+  },
+  'Project Specialist': {
+    direct:      ['project coordination','project schedule','milestone tracker','action item log','project documentation','status report','project tracking','workstream','deliverable tracking','risk log'],
+    transferable:['project management','meeting facilitation','gantt','cross-functional coordination','pmbok','project admin','project status','scheduling'],
+    growth:      ['project management','project coordination','pmp','agile','scrum','project planning']
+  },
+  'Cloud Support Specialist': {
+    direct:      ['cloud','aws','azure','cloud infrastructure','cloud architecture','pagerduty','distributed job scheduling','batch processing','cloud platform','cloud governance'],
+    transferable:['monitoring','alerting','cloud operations','cloud security','infrastructure','system monitoring','cloud cost'],
+    growth:      ['cloud','aws','azure','infrastructure','cloud architecture','cloud admin']
+  },
+  'Contracts & Procurement Administrator': {
+    direct:      ['contract','procurement','vendor contract','solicitation','contract management','state procurement','contract lifecycle','contract compliance','rfp','rfq'],
+    transferable:['contract administration','procurement planning','contract monitoring','vendor performance','invoice','federal requirements','deliverable tracking'],
+    growth:      ['contracts','procurement','vendor management','contract administration']
+  },
+  'MuleSoft Administrator': {
+    direct:      ['mulesoft','anypoint platform','cloudhub','runtime manager','mule application','api gateway'],
+    transferable:['api','integration','cicd','deployment','middleware','integration platform','connector','data integration'],
+    growth:      ['api','integration','mulesoft','middleware','integration platform']
+  },
+  'Salesforce Administrator': {
+    direct:      ['salesforce','crm','salesforce admin','flows','validation rules','permission sets','salesforce configuration'],
+    transferable:['profiles','objects','fields','page layout','record type','automation','sandbox','release management','low-code'],
+    growth:      ['salesforce','crm','salesforce admin','low-code platform']
+  },
+  'Snowflake Administrator': {
+    direct:      ['snowflake','data warehouse','cloud data warehouse','virtual warehouse','clustering','materialized view','snowflake admin'],
+    transferable:['schema','sql','data governance','data access','data pipeline','data quality','data security','data platform','analytics platform'],
+    growth:      ['data','sql','data warehouse','analytics','data platform','reporting']
+  },
+  'Tableau Administrator': {
+    direct:      ['tableau','tableau server','tableau cloud','workbook','tableau admin','tableau site','published data source','tableau governance'],
+    transferable:['dashboard','reporting','analytics','data visualization','data source','performance tuning','extract'],
+    growth:      ['data visualization','reporting','analytics','dashboards','tableau','business intelligence']
+  },
+  'Release Manager': {
+    direct:      ['release management','release schedule','release coordination','release calendar','release governance','technical release','release planning','release train','environment promotion','rollback'],
+    transferable:['change management','maintenance window','deployment','change advisory','cab','post-deployment','change management'],
+    growth:      ['release management','deployment','change management','technical coordination','release planning']
+  },
+};
+
+function roleScore(ratings, weights) {
+  let ws=0,tw=0;
+  Object.entries(weights).forEach(([sid,w])=>{ws+=(ratings[sid]||0)*w;tw+=5*w;});
+  return tw>0?Math.round((ws/tw)*100):0;
+}
+
+// JD keyword score: checks person's open-text against direct/transferable/growth tiers
+// Direct = 20pts each (capped 60), Transferable = 10pts each (capped 30), Growth = 6pts each (capped 20)
+// Total max = 100
+function jdKeywordScore(person, roleName) {
+  const jd = ROLE_JD[roleName];
+  if (!jd) return 0;
+  const text = [
+    person.learnDetail||'', person.strength||'', person.notes||'',
+    (person.learnAreas||[]).join(' ')
+  ].join(' ').toLowerCase();
+
+  let direct=0, transfer=0, growth=0;
+  (jd.direct||[]).forEach(kw =>      { if(text.includes(kw.toLowerCase())) direct   = Math.min(direct+20,  60); });
+  (jd.transferable||[]).forEach(kw => { if(text.includes(kw.toLowerCase())) transfer = Math.min(transfer+10, 30); });
+  (jd.growth||[]).forEach(kw =>       { if(text.includes(kw.toLowerCase())) growth   = Math.min(growth+6,   20); });
+  return Math.min(direct + transfer + growth, 100);
+}
+
+// Also map learn area IDs to roles for a bonus
+const LEARN_AREA_ROLE_BONUS = {
+  la_access: ['Access Management Administrator','Identity Management Administrator'],
+  la_km:     ['Knowledge Management Specialist','Document Management Analyst'],
+  la_lms:    ['Learning Management System Administrator'],
+  la_cert:   ['Certifications & Outcomes Lead'],
+  la_training:['Training Specialist','Learning Management System Administrator'],
+  la_bp:     ['Business Process & Requirements Analyst','Project Specialist'],
+  la_trading:['Trading Partner Analyst'],
+  la_qa:     ['QA Analyst'],
+  la_svc:    ['Service Management Administrator','Release Manager'],
+  la_doc:    ['Document Management Analyst','Knowledge Management Specialist'],
+  la_power:  ['Power Platform Administrator','Salesforce Administrator'],
+  la_data:   ['Snowflake Administrator','Tableau Administrator','Reporting'],
+  la_pm:     ['Project Specialist','Release Manager'],
+  la_comm:   ['Communications Analyst'],
+};
+
+function learnAreaBonus(person, roleName) {
+  let bonus = 0;
+  (person.learnAreas||[]).forEach(area => {
+    const roles = LEARN_AREA_ROLE_BONUS[area]||[];
+    if (roles.includes(roleName)) bonus += 15;
+  });
+  return Math.min(bonus, 30);
+}
+
+// Blended score: 55% skill, 30% JD keyword match, 15% learn area bonus
+function blendedScore(person, roleName, weights) {
+  const skill  = roleScore(person.ratings, weights);
+  const jdkw   = jdKeywordScore(person, roleName);
+  const laBonus = learnAreaBonus(person, roleName);
+  return Math.round(skill*0.55 + jdkw*0.30 + laBonus*0.15);
+}
+
+function assignRoles(peopleArr) {
+  const n = peopleArr.length;
+  const r = ROLES.length;
+  const matrix = peopleArr.map(p =>
+    ROLES.map(([name, weights]) => ({
+      name, blended: blendedScore(p, name, weights),
+      skill: roleScore(p.ratings, weights),
+      jdMatch: jdKeywordScore(p, name),
+      learnBonus: learnAreaBonus(p, name),
+    }))
+  );
+  const triples = [];
+  for (let pi=0;pi<n;pi++) for (let ri=0;ri<r;ri++) triples.push({pi,ri,score:matrix[pi][ri].blended});
+  triples.sort((a,b)=>b.score-a.score);
+  const assignedRole=new Array(n).fill(null);
+  const roleUsed=new Array(r).fill(false);
+  for (const {pi,ri} of triples) {
+    if (assignedRole[pi]!==null||roleUsed[ri]) continue;
+    assignedRole[pi]=ri; roleUsed[ri]=true;
+  }
+  for (let pi=0;pi<n;pi++) {
+    if (assignedRole[pi]!==null) continue;
+    const sorted=matrix[pi].map((s,ri)=>({ri,score:s.blended})).sort((a,b)=>b.score-a.score);
+    for (const {ri} of sorted) { if(!roleUsed[ri]){assignedRole[pi]=ri;roleUsed[ri]=true;break;} }
+    if (assignedRole[pi]===null) assignedRole[pi]=matrix[pi].map((s,ri)=>({ri,s:s.blended})).sort((a,b)=>b.s-a.s)[0].ri;
+  }
+  return assignedRole.map((ri,pi)=>({
+    roleIdx:ri, roleName:ROLES[ri][0],
+    blended:matrix[pi][ri].blended, skill:matrix[pi][ri].skill,
+    jdMatch:matrix[pi][ri].jdMatch, learnBonus:matrix[pi][ri].learnBonus,
+    allScores:matrix[pi]
+  }));
+}
+
+function scorePill(pct){
+  const cls=pct>=65?'s-green':pct>=45?'s-yellow':pct>=25?'s-orange':'s-red';
+  return `<span class="score-pill ${cls}">${pct}%</span>`;
+}
+
+function safeEncode(obj){return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));}
+function safeDecode(str){
+  try{return JSON.parse(decodeURIComponent(escape(atob(str))));}
+  catch(e){return JSON.parse(atob(str));}
+}
+
+function decode(code){
+  try{
+    const raw=code.trim().startsWith('MO_ASSESSMENT_V1:')?code.trim().slice(17):code.trim();
+    const data=safeDecode(raw);
+    const rstr=data.r||'';
+    const ratings={};
+    SKILL_IDS.forEach((sid,i)=>{ratings[sid]=parseInt(rstr[i]||'0')||0;});
+    return{
+      name:data.n||'Unknown', title:data.t||'', team:data.tm||'',
+      years:data.y||'', strength:data.s||'', developing:data.d||'', notes:data.x||'',
+      date:data.dt||'', ratings,
+      learnOpen:parseInt(data.lo||'0')||0,
+      learnAreas:(data.la||'').split(',').filter(Boolean),
+      learnDetail:data.ld||'',
+    };
+  }catch(e){return null;}
+}
+
+let decoded=[];
+
+function decodeAll(){
+  const raw=document.getElementById('codes-input').value.trim();
+  if(!raw){showStatus('Paste at least one submission code to continue.','error');return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>10);
+  decoded=[];
+  const errors=[];
+  lines.forEach((line,i)=>{
+    const r=decode(line);
+    if(r)decoded.push(r);
+    else errors.push(i+1);
+  });
+  if(!decoded.length){showStatus('No valid codes found. Make sure codes start with MO_ASSESSMENT_V1:','error');return;}
+  let msg=`${decoded.length} submission${decoded.length>1?'s':''} decoded successfully.`;
+  if(errors.length) msg+=` ${errors.length} line${errors.length>1?'s':''} could not be read (line${errors.length>1?'s':''} ${errors.join(', ')}).`;
+  showStatus(msg,'success');
+  renderPreview();
+}
+
+function renderPreview(){
+  document.getElementById('preview-section').style.display='block';
+  document.getElementById('count-badge').textContent=decoded.length+' people';
+  const tbody=document.getElementById('preview-body');
+  const assignments=assignRoles(decoded);
+  tbody.innerHTML=decoded.map((p,i)=>{
+    const asgn=assignments[i];
+    const rated=SKILL_IDS.filter(sid=>p.ratings[sid]>0).length;
+    const opLabel=OPENNESS_LABELS[p.learnOpen]||'Not answered';
+    const opColor=p.learnOpen>=4?'s-green':p.learnOpen>=3?'s-yellow':p.learnOpen>=2?'s-orange':'';
+    const sorted=asgn.allScores.map((s,ri)=>({...s,ri})).sort((a,b)=>b.blended-a.blended);
+    const second=sorted.find(s=>s.ri!==asgn.roleIdx)||sorted[1];
+    return`<tr>
+      <td style="color:#888;font-size:11px">${i+1}</td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.title}</td><td>${p.team}</td>
+      <td style="font-size:11px;color:#888">${p.date}</td>
+      <td style="text-align:center">${rated}/${SKILL_IDS.length}</td>
+      <td><span class="score-pill ${opColor}">${opLabel}</span></td>
+      <td style="font-weight:700;color:#085041">${asgn.roleName} ${scorePill(asgn.blended)}
+        <span style="font-size:10px;color:#555;font-weight:400;display:block">
+          skill ${asgn.skill}% &nbsp;|&nbsp; JD match ${asgn.jdMatch}% &nbsp;|&nbsp; interests +${asgn.learnBonus}
+        </span></td>
+      <td>${second?second.name+' '+scorePill(second.blended):''}</td>
+      <td><button class="remove-btn" onclick="removePerson(${i})" title="Remove">&#10005;</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('download-section').style.display=decoded.length?'block':'none';
+}
+
+function removePerson(idx){
+  decoded.splice(idx,1);
+  if(!decoded.length){document.getElementById('preview-section').style.display='none';return;}
+  renderPreview();
+}
+
+function showStatus(msg,type='info'){
+  const el=document.getElementById('status-bar');
+  el.textContent=msg;
+  el.className='status-bar '+(type==='error'?'error':type==='success'?'success':'');
+  el.style.display='block';
+}
+function clearAll(){
+  document.getElementById('codes-input').value='';
+  document.getElementById('status-bar').style.display='none';
+  document.getElementById('preview-section').style.display='none';
+  decoded=[];
+}
+
+// ── EXCEL ─────────────────────────────────────────────────────────────────
+function cw(w){return{wch:w};}
+const NAVY='1F4E79',BLUE='2E75B6',LTBLUE='DBEEFF',TEAL='085041',LTTEAL='C8EEE0',
+      LTGREEN='D8EEC2',AMBER='633806',LTAMBER='FDE9BE',RED='A32D2D',LTRED='FBDDD3',
+      GRAY='F4F6F9',WHITE='FFFFFF',DGRAY='5F5E5A';
+
+function hs(bg,fg='FFFFFF',sz=10,bold=true){
+  return{font:{name:'Arial',bold,sz,color:{rgb:fg}},
+         fill:{patternType:'solid',fgColor:{rgb:bg}},
+         alignment:{horizontal:'center',vertical:'center',wrapText:true},
+         border:{bottom:{style:'thin',color:{rgb:'CBD5E0'}}}};
+}
+function bs(bg=WHITE,bold=false,align='left',wrap=false){
+  return{font:{name:'Arial',bold,sz:10,color:{rgb:'222222'}},
+         fill:{patternType:'solid',fgColor:{rgb:bg}},
+         alignment:{horizontal:align,vertical:'center',wrapText:wrap},
+         border:{bottom:{style:'thin',color:{rgb:'EEEEEE'}}}};
+}
+function ss(pct){
+  const bg=pct>=65?LTTEAL:pct>=45?LTAMBER:pct>=25?LTRED:'F7C1C1';
+  const fg=pct>=65?TEAL:pct>=45?AMBER:RED;
+  return{font:{name:'Arial',bold:true,sz:10,color:{rgb:fg}},
+         fill:{patternType:'solid',fgColor:{rgb:bg}},
+         alignment:{horizontal:'center',vertical:'center'},
+         border:{bottom:{style:'thin',color:{rgb:'EEEEEE'}}}};
+}
+function mc(v,s){return{v,s,t:typeof v==='number'?'n':'s'};}
+
+function downloadExcel(){
+  const wb=XLSX.utils.book_new();
+
+  // ── Sheet 1: Role Scores heatmap ────────────────────────────────────────
+  const h1=[mc('Staff member',hs(NAVY)),mc('Current role',hs(NAVY)),mc('Team',hs(NAVY)),
+    ...ROLES.map(([n])=>mc(n,hs(NAVY,'FFFFFF',8))),
+    mc('Avg score',hs(NAVY)),mc('Top match',hs(NAVY)),mc('Learning openness',hs(NAVY))];
+  const rows1=[h1];
+  const assignments=assignRoles(decoded);
+  decoded.forEach((p,ri)=>{
+    const bg=ri%2===0?GRAY:WHITE;
+    const asgn=assignments[ri];
+    const blendedScores=asgn.allScores.map(s=>s.blended);
+    const avg=Math.round(blendedScores.reduce((a,b)=>a+b,0)/blendedScores.length);
+    const opLabel=OPENNESS_LABELS[p.learnOpen]||'Not answered';
+    rows1.push([
+      mc(p.name,bs(bg,true)),mc(p.title,bs(bg)),mc(p.team,bs(bg)),
+      ...blendedScores.map(pct=>mc(pct+'%',ss(pct))),
+      mc(avg+'%',ss(avg)),
+      mc(asgn.roleName+' ✓',bs(LTTEAL,true)),
+      mc(opLabel,p.learnOpen>=4?bs(LTTEAL,true,'center'):p.learnOpen>=3?bs(LTAMBER,false,'center'):bs(bg,false,'center')),
+    ]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols']=[cw(24),cw(20),cw(14),...ROLES.map(()=>cw(13)),cw(10),cw(26),cw(18)];
+  ws1['!rows']=[{hpt:56},...decoded.map(()=>({hpt:18}))];
+  XLSX.utils.book_append_sheet(wb,ws1,'Role Score Heatmap');
+
+  // ── Sheet 2: Role Assignment Planner ────────────────────────────────────
+  const h2=['Staff member','Current role','Team','#1 Role match','Score',
+    '#2 Role match','Score','#3 Role match','Score',
+    'Learning openness','Learning interests','Assigned role','Status','Notes'].map(h=>mc(h,hs(NAVY)));
+  const rows2=[h2];
+  decoded.forEach((p,ri)=>{
+    const bg=ri%2===0?GRAY:WHITE;
+    const asgn=assignments[ri];
+    const sorted=asgn.allScores.map((s,idx)=>({...s,idx})).sort((a,b)=>b.blended-a.blended);
+    const second=sorted.find(s=>s.idx!==asgn.roleIdx)||sorted[1];
+    const third=sorted.filter(s=>s.idx!==asgn.roleIdx&&s!==second)[0]||sorted[2];
+    const opLabel=OPENNESS_LABELS[p.learnOpen]||'Not answered';
+    const laLabels=p.learnAreas.map(id=>LEARN_AREA_LABELS[id]||id).join(', ');
+    rows2.push([
+      mc(p.name,bs(bg,true)),mc(p.title,bs(bg)),mc(p.team,bs(bg)),
+      mc(asgn.roleName+' (ASSIGNED)',bs(LTTEAL,true)),mc(asgn.blended+'%',ss(asgn.blended)),
+      mc(second?second.name:'',bs(LTBLUE,false)),mc(second?second.blended+'%':'',second?ss(second.blended):bs(bg)),
+      mc(third?third.name:'',bs(LTAMBER,false)),mc(third?third.blended+'%':'',third?ss(third.blended):bs(bg)),
+      mc(opLabel,p.learnOpen>=4?bs(LTTEAL,true,'center'):bs(bg,false,'center')),
+      mc(laLabels,bs(bg,false,'left',true)),
+      mc('',bs(WHITE)),mc('',bs(WHITE)),mc('',bs(WHITE)),
+    ]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols']=[cw(24),cw(20),cw(14),cw(28),cw(9),cw(28),cw(9),cw(28),cw(9),cw(18),cw(32),cw(28),cw(14),cw(32)];
+  ws2['!rows']=[{hpt:28},...decoded.map(()=>({hpt:20}))];
+  XLSX.utils.book_append_sheet(wb,ws2,'Role Assignment Planner');
+
+  // ── Sheet 3: Learning & Growth ───────────────────────────────────────────
+  const h3=['Staff member','Current role','Team','Learning openness','Open to training?',
+    'Learning interests (selected)','What they want to learn (open text)',
+    'Currently developing','Strengths','Notes'].map(h=>mc(h,hs(NAVY)));
+  const rows3=[h3];
+  decoded.forEach((p,ri)=>{
+    const bg=ri%2===0?GRAY:WHITE;
+    const opLabel=OPENNESS_LABELS[p.learnOpen]||'Not answered';
+    const laLabels=p.learnAreas.map(id=>LEARN_AREA_LABELS[id]||id).join(', ');
+    const opStyle=p.learnOpen>=4?bs(LTTEAL,true,'center'):p.learnOpen>=3?bs(LTAMBER,false,'center'):bs(bg,false,'center');
+    rows3.push([
+      mc(p.name,bs(bg,true)),mc(p.title,bs(bg)),mc(p.team,bs(bg)),
+      mc(p.learnOpen?p.learnOpen+'/5':'',ss(p.learnOpen>=3?65:p.learnOpen>=2?45:20)),
+      mc(opLabel,opStyle),
+      mc(laLabels,bs(bg,false,'left',true)),
+      mc(p.learnDetail,bs(bg,false,'left',true)),
+      mc(p.developing,bs(bg,false,'left',true)),
+      mc(p.strength,bs(bg,false,'left',true)),
+      mc(p.notes,bs(bg,false,'left',true)),
+    ]);
+  });
+  const ws3=XLSX.utils.aoa_to_sheet(rows3);
+  ws3['!cols']=[cw(24),cw(20),cw(14),cw(12),cw(18),cw(36),cw(40),cw(32),cw(32),cw(28)];
+  ws3['!rows']=[{hpt:28},...decoded.map(()=>({hpt:36}))];
+  XLSX.utils.book_append_sheet(wb,ws3,'Learning & Growth');
+
+  // ── Sheet 4: Skill Ratings Detail ────────────────────────────────────────
+  const catHdr=[mc('Name',hs(NAVY)),mc('Current role',hs(NAVY)),
+    ...SKILL_IDS.map(sid=>{
+      const cat=SKILL_CATS[sid];
+      const colors={'Platform & System Admin':{bg:'0C447C',fg:LTBLUE},'Technical Platforms':{bg:'3B6D11',fg:LTGREEN},'Process & Professional':{bg:AMBER,fg:LTAMBER}};
+      const c=colors[cat]||{bg:NAVY,fg:'FFFFFF'};
+      return mc(cat.replace(' & ','\n&\n').replace('Technical','Tech.'),hs(c.bg,c.fg,8));
+    })];
+  const skillHdr=[mc('Name',hs(BLUE)),mc('Current role',hs(BLUE)),
+    ...SKILL_IDS.map(sid=>mc(SKILL_NAMES[sid],hs(BLUE,'FFFFFF',8)))];
+  const rows4=[catHdr,skillHdr];
+  decoded.forEach((p,ri)=>{
+    const bg=ri%2===0?GRAY:WHITE;
+    rows4.push([
+      mc(p.name,bs(bg,true)),mc(p.title,bs(bg)),
+      ...SKILL_IDS.map(sid=>{
+        const v=p.ratings[sid]||0;
+        if(!v) return mc('',bs(bg,false,'center'));
+        const rc={1:{bg:LTRED,fg:RED},2:{bg:LTAMBER,fg:AMBER},3:{bg:LTBLUE,fg:'0C447C'},4:{bg:LTTEAL,fg:TEAL},5:{bg:LTGREEN,fg:'3B6D11'}}[v]||{bg,fg:'222222'};
+        return mc(v,{font:{name:'Arial',bold:true,sz:10,color:{rgb:rc.fg}},fill:{patternType:'solid',fgColor:{rgb:rc.bg}},alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'thin',color:{rgb:'EEEEEE'}}}});
+      })
+    ]);
+  });
+  const ws4=XLSX.utils.aoa_to_sheet(rows4);
+  ws4['!cols']=[cw(24),cw(20),...SKILL_IDS.map(()=>cw(6))];
+  ws4['!rows']=[{hpt:28},{hpt:56},...decoded.map(()=>({hpt:18}))];
+  XLSX.utils.book_append_sheet(wb,ws4,'Skill Ratings Detail');
+
+  const date=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`MO_Role_Assessment_${date}.xlsx`);
+}
+
+// ── DEMO DATA ─────────────────────────────────────────────────────────────
+// r string order (26 chars): sop_writing,kb_mgmt,reporting,compliance,qa_testing,requirements,
+//   project_coord,communications,training_del,cms_cert,stakeholder,
+//   user_mgmt,rbac,system_config,system_monitor,change_mgmt,incident_mgmt,
+//   dual_env,cutover,iam_systems,low_code,doc_mgmt,lms,edi_hipaa,sql_data,itsm_itil
+function loadDemo(){
+  const demos=[
+    {n:'Alex Rivera',t:'OCM Specialist',tm:'Change Management',y:'3 years',
+     r:'54534430320034423040010003',
+     s:'Strong SOP writer and trainer with KB governance experience',
+     x:'Available for any role next month',
+     lo:'4',la:'la_km,la_training,la_lms,la_data',
+     ld:'I would love to move into a knowledge management or training role. I have been building SOPs for 3 years and want to own a KB system end to end.',dt:'5/19/2026'},
+    {n:'Jordan Lee',t:'Legacy Systems Analyst',tm:'Legacy Ops',y:'5 years',
+     r:'43334321235545553310020045',
+     s:'Deep IT service management experience leading incident bridges for 3+ years',
+     x:'Prefers technical roles',
+     lo:'5',la:'la_svc,la_access,la_doc,la_power',
+     ld:'I am actively pursuing cloud certification and want to grow into a more technical platform admin role. Service management or access management would be ideal.',dt:'5/19/2026'},
+    {n:'Morgan Chen',t:'Training Coordinator',tm:'Training',y:'2 years',
+     r:'44253321100000300054551003',
+     s:'Expert learning platform admin and e-learning content developer',
+     x:'',
+     lo:'5',la:'la_lms,la_training,la_km,la_cert',
+     ld:'I want to become the go-to learning platform admin and eventually take on a training specialist role with ownership of the full learning lifecycle.',dt:'5/20/2026'},
+    {n:'Sam Patel',t:'Business Analyst',tm:'Program Management',y:'4 years',
+     r:'45543540230033323010000003',
+     s:'Requirements documentation and process mapping expert',
+     x:'Strong preference for BA or QA role',
+     lo:'3',la:'la_bp,la_qa,la_pm,la_data',
+     ld:'I am interested in growing my quality assurance skills and getting more exposure to formal test management.',dt:'5/20/2026'},
+    {n:'Taylor Brooks',t:'Security Analyst',tm:'OIT Security',y:'6 years',
+     r:'33324312355554323400050003',
+     s:'User access and identity systems expert. Holds security certifications.',
+     x:'',
+     lo:'4',la:'la_access,la_svc,la_power,la_doc',
+     ld:'I am very interested in moving into the Access Management Analyst role. My background is a direct match and I want to stay in the identity and access space.',dt:'5/19/2026'},
+  ];
+  const codes=demos.map(d=>'MO_ASSESSMENT_V1:'+safeEncode({v:2,...d}));
+  document.getElementById('codes-input').value=codes.join('\n');
+  showStatus('Demo data loaded - click "Decode submissions" to see results.','info');
+}
+</script>
+</body>
+</html>
